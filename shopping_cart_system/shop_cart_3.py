@@ -5,14 +5,13 @@ from shelf_region import coverShelfRegion
 from cart_detect import cartDetection
 import numpy as np
 import requests
-import json
 url = "https://shopping-cart-server-production.up.railway.app/customer_cart"
 
 cap = cv2.VideoCapture(0)
 
 pts1 = np.array([[50,10],[200,50],[200,200],[50,200]], np.int32)
 pts1 = pts1.reshape((-1,1,2))
-product = {"cartid": 1234, "bottle": 0, "cellphone": 0, "mouse": 0, "totalcost": 0, "paid":False}
+product = {"cartid": 421, "bottle": 0, "cellphone": 0, "mouse": 0, "totalcost": 0, "paid":False}
 pts2 = np.array([[200,300],[400,300],[400,400],[200,450]], np.int32)
 pts2 = pts2.reshape((-1,1,2))
 detected_frame_right = [0]
@@ -59,16 +58,15 @@ while cap.isOpened():
                 detected_frame_right_s = productDetection(frame=frame_rightHand)
                 if len(detected_frame_right_s) > 0:
                     # product["p2"] = "0"
-                    flag_ts_shelf = True
                     flag_ts_cart = False
 
         except(ZeroDivisionError):
             print(ZeroDivisionError)
         
-        
+
         if flag_tc_cart:
-            res_right_hand_cart = insideBox(pts2, right_wrist_point)
-            if res_right_hand_cart == 1:
+            res_right_hand_cart_c = insideBox(pts2, right_wrist_point)
+            if res_right_hand_cart_c == 1 and len(detected_frame_right) > 0:
                 if detected_frame_right[0] == 39:
                     product["bottle"] += 1
 
@@ -82,17 +80,18 @@ while cap.isOpened():
         
 
         if flag_ts_shelf:
-            res_right_hand_shelf = insideBox(pts1, right_wrist_point)
-            if res_right_hand_shelf == 1:
-                if detected_frame_right[0] == 39:
+            res_right_hand_shelf_d = insideBox(pts1, right_wrist_point)
+            if res_right_hand_shelf_d == 1 and len(detected_frame_right_s) > 0:
+                if detected_frame_right_s[0] == 39:
                     product["bottle"] -= 1
 
-                if detected_frame_right[0] == 73:
+                if detected_frame_right_s[0] == 73:
                     product["book"] -= 1
 
-                if detected_frame_right[0] == 67:
+                if detected_frame_right_s[0] == 67:
                     product["cellphone"] -= 1
-                flag_ts_shelf = False
+
+                flag_ts_cart = True
 
 
         print(product)
@@ -108,12 +107,10 @@ while cap.isOpened():
         break
 
 
-# Create a dictionary of the data to send in the request body
-# data = json.dumps(product)
+
 data = product
 
 response = requests.post(url, json=data)
-
 
 if response.status_code == 200:
     print("POST request successful")
